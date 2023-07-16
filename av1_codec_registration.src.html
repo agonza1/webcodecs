@@ -7,16 +7,18 @@ Level: none
 Group: mediawg
 ED: https://w3c.github.io/webcodecs/av1_codec_registration.html
 TR: https://www.w3.org/TR/webcodecs-av1-codec-registration/
-Editor: Chris Cunningham, w3cid 114832, Google Inc. https://www.google.com/
 Editor: Paul Adenot, w3cid 62410, Mozilla https://www.mozilla.org/
 Editor: Bernard Aboba, w3cid 65611, Microsoft Corporation https://www.microsoft.com/
+Former Editor: Chris Cunningham, w3cid 114832, Google Inc. https://www.google.com/
 
 Abstract: This registration is entered into the [[webcodecs-codec-registry]].
     It describes, for AV1, the (1) fully qualified codec strings,
     (2) the codec-specific {{EncodedVideoChunk}}
-    [=EncodedVideoChunk/[[internal data]]=] bytes, (3) the
-    {{VideoDecoderConfig.description}} bytes, and (4) the values of
-    {{EncodedVideoChunk}} [=EncodedVideoChunk/[[type]]=].
+    {{EncodedVideoChunk/[[internal data]]}} bytes, (3) the codec-specific
+    extensions to {{VideoEncoderConfig}}, (4) the
+    {{VideoDecoderConfig/description|VideoDecoderConfig.description}} bytes,
+    (5) the values of {{EncodedVideoChunk}} {{EncodedVideoChunk/[[type]]}}, and
+    (6) the codec-specific extensions to {{VideoEncoderEncodeOptions}}.
 
     The registration is not intended to include any information on whether a
     codec format is encumbered by intellectual property claims. Implementers and
@@ -30,24 +32,6 @@ Markup Shorthands:css no, markdown yes, dfn yes
 !Participate: <a href="https://github.com/w3c/webcodecs">Git Repository.</a>
 !Participate: <a href="https://github.com/w3c/webcodecs/issues/new">File an issue.</a>
 !Version History: <a href="https://github.com/w3c/webcodecs/commits">https://github.com/w3c/webcodecs/commits</a>
-</pre>
-
-<pre class='anchors'>
-spec: WEBCODECS; urlPrefix: https://w3c.github.io/webcodecs/#
-    type: attribute
-        text: EncodedVideoChunkMetadata.decoderConfig; url: dom-encodedvideochunkmetadata-decoderconfig
-        for: EncodedVideoChunkType; text: key; url: dom-encodedvideochunktype-key
-        text: VideoDecoderConfig.description; url: dom-videodecoderconfig-description
-    type: dfn
-        for: EncodedVideoChunk; text: [[internal data]]; url: dom-encodedvideochunk-internal-data-slot
-        for: EncodedVideoChunk; text: [[type]]; url: dom-encodedvideochunk-type-slot
-        for: VideoEncoder; text: [[output callback]]; url: dom-videoencoder-output-callback-slot
-    type: interface
-        text: EncodedVideoChunk; url: encodedvideochunk
-        text: VideoEncoder; url: videoencoder
-    type: dictionary
-        text: VideoEncoderConfig; url: dictdef-videoencoderconfig
-        text: VideoDecoderConfig; url: dictdef-videodecoderconfig
 </pre>
 
 <pre class='biblio'>
@@ -74,26 +58,108 @@ suffix as described in Section 5 of [[AV1-ISOBMFF]].
 EncodedVideoChunk data {#encodedvideochunk-data}
 ================================================
 
-{{EncodedVideoChunk}} [=EncodedVideoChunk/[[internal data]]=] is expected to be
+{{EncodedVideoChunk}} {{EncodedVideoChunk/[[internal data]]}} is expected to be
 data compliant to the "low-overhead bitstream format" as described in Section 5
 of [[AV1]].
 
 VideoDecoderConfig description {#videodecoderconfig-description}
 ================================================================
 
-{{VideoDecoderConfig.description}} is not used for this codec.
+{{VideoDecoderConfig/description}} is not used for this codec.
 
 EncodedVideoChunk type {#encodedvideochunk-type}
 ================================================
 
-If an {{EncodedVideoChunk}}'s [=EncodedVideoChunk/[[type]]=] is
+If an {{EncodedVideoChunk}}'s {{EncodedVideoChunk/[[type]]}} is
 {{EncodedVideoChunkType/key}}, then the {{EncodedVideoChunk}} is expected to
 contain a frame with a `frame_type` of `KEY_FRAME` as defined in Section
 6.8.2 of [[AV1]].
 
-Privacy and Security Considerations {#privacy-and-security-considerations}
+VideoEncoderConfig extensions {#videoencoderconfig-extensions}
+==============================================================
+
+<pre class='idl'>
+<xmp>
+partial dictionary VideoEncoderConfig {
+  AV1EncoderConfig av1;
+};
+</xmp>
+</pre>
+
+<dl>
+  <dt><dfn dict-member for=VideoEncoderConfig>av1</dfn></dt>
+  <dd>
+    Contains codec specific configuration options for the AV1 codec.
+  </dd>
+</dl>
+
+AV1EncoderConfig {#av1-encoder-config}
+--------------------------------------
+<pre class='idl'>
+<xmp>
+dictionary AV1EncoderConfig {
+  boolean forceScreenContentTools = false;
+};
+</xmp>
+</pre>
+
+<dl>
+  <dt><dfn dict-member for=AV1EncoderConfig>forceScreenContentTools</dfn></dt>
+  <dd>
+     Indicates whether the encoder should force use of screen content
+     coding tools. The default value (false) indicates that use of
+     screen content coding tools is not forced. A value of true
+     (corresponding to setting seq_force_screen_content_tools
+     to SELECT_SCREEN_CONTENT_TOOLS in Section 5.5.1
+     of [[AV1]]) indicates that use of screen content coding tools
+     is forced.
+  </dd>
+</dl>
+
+VideoEncoderEncodeOptions extensions {#videoencoderencodeoptions-extensions}
+==============================================================
+
+<pre class='idl'>
+<xmp>
+partial dictionary VideoEncoderEncodeOptions {
+  VideoEncoderEncodeOptionsForAv1 av1;
+};
+</xmp>
+</pre>
+
+<dl>
+  <dt><dfn dict-member for=VideoEncoderEncodeOptions>av1</dfn></dt>
+  <dd>
+    Contains codec specific encode options for the [[AV1]] codec.
+  </dd>
+</dl>
+
+VideoEncoderEncodeOptionsForAv1 {#av1-encode-options}
+--------------------------------------
+<pre class='idl'>
+<xmp>
+dictionary VideoEncoderEncodeOptionsForAv1 {
+  unsigned short? quantizer;
+};
+</xmp>
+</pre>
+
+<dl>
+  <dt><dfn dict-member for=VideoEncoderEncodeOptionsForAv1>quantizer</dfn></dt>
+  <dd>
+    Sets per-frame quantizer value.
+    In [[AV1]] the quantizer threshold can be varied from 0 to 63
+  </dd>
+</dl>
+
+Privacy Considerations {#privacy-considerations}
 ==========================================================================
 
-Please refer to the [[WEBCODECS#privacy-considerations|Privacy Considerations]]
-and [[WEBCODECS#security-considerations|Security Considerations]] sections in
-[[WEBCODECS]].
+Please refer to the section [[WEBCODECS#privacy-considerations|Privacy
+Considerations]] in [[WEBCODECS]].
+
+Security Considerations {#security-considerations}
+==========================================================================
+
+Please refer to the section [[WEBCODECS#security-considerations|Security
+Considerations]] in [[WEBCODECS]].

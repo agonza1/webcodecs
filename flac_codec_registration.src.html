@@ -7,16 +7,17 @@ Level: none
 Group: mediawg
 ED: https://w3c.github.io/webcodecs/flac_codec_registration.html
 TR: https://www.w3.org/TR/webcodecs-flac-codec-registration/
-Editor: Chris Cunningham, w3cid 114832, Google Inc. https://www.google.com/
 Editor: Paul Adenot, w3cid 62410, Mozilla https://www.mozilla.org/
 Editor: Bernard Aboba, w3cid 65611, Microsoft Corporation https://www.microsoft.com/
+Former Editor: Chris Cunningham, w3cid 114832, Google Inc. https://www.google.com/
 
 Abstract: This registration is entered into the [[webcodecs-codec-registry]].
     It describes, for FLAC, the (1) fully qualified codec strings,
     (2) the codec-specific {{EncodedAudioChunk}}
-    [=EncodedAudioChunk/[[internal data]]=] bytes, (3) the
-    {{AudioDecoderConfig.description}} bytes, and (4) the values of
-    {{EncodedAudioChunk}} [=EncodedAudioChunk/[[type]]=].
+    {{EncodedAudioChunk/[[internal data]]}} bytes, (3) the
+    {{AudioDecoderConfig/description|AudioDecoderConfig.description}} bytes,
+    (4) the values of {{EncodedAudioChunk}} {{EncodedAudioChunk/[[type]]}},
+    and (5) the codec-specific extensions to {{AudioEncoderConfig}}.
 
     The registration is not intended to include any information on whether a
     codec format is encumbered by intellectual property claims. Implementers and
@@ -32,28 +33,12 @@ Markup Shorthands:css no, markdown yes, dfn yes
 !Version History: <a href="https://github.com/w3c/webcodecs/commits">https://github.com/w3c/webcodecs/commits</a>
 </pre>
 
-<pre class='anchors'>
-spec: WEBCODECS; urlPrefix: https://w3c.github.io/webcodecs/#
-    type: attribute
-        text: AudioDecoderConfig.description; url: dom-audiodecoderconfig-description
-        text: AudioDecoderConfig.sampleRate; url: dom-audiodecoderconfig-samplerate
-        text: AudioDecoderConfig.numberOfChannels; url: dom-audiodecoderconfig-numberofchannels
-    type: dfn
-        for: EncodedAudioChunkType; text: key; url: dom-encodedaudiochunktype-key
-        for: EncodedAudioChunk; text: [[internal data]]; url: dom-encodedaudiochunk-internal-data-slot
-        for: EncodedAudioChunk; text: [[type]]; url: dom-encodedaudiochunk-type-slot
-    type: interface
-        text: EncodedAudioChunk; url: encodedaudiochunk
-    type: dictionary
-        text: AudioDecoderConfig; url: dictdef-audiodecoderconfig
-</pre>
-
 <pre class='biblio'>
 {
   "FLAC": {
-    "href": "https://xiph.org/flac/format.html",
-    "title": "FLAC - format",
-    "publisher": "Xiph.Org Foundation"
+    "href": "https://datatracker.ietf.org/doc/draft-ietf-cellar-flac",
+    "title": "Free Lossless Audio Codec",
+    "publisher": "IETF"
   }
 }
 </pre>
@@ -66,21 +51,21 @@ The codec string is `"flac"`.
 EncodedAudioChunk data {#encodedaudiochunk-data}
 ================================================
 
-{{EncodedAudioChunk}} [=EncodedAudioChunk/[[internal data]]=] is expected to be
+{{EncodedAudioChunk}} {{EncodedAudioChunk/[[internal data]]}} is expected to be
 a "FRAME" as described in [[FLAC]].
 
 AudioDecoderConfig description {#audiodecoderconfig-description}
 ================================================================
 
-{{AudioDecoderConfig.description}} is required, and has to be the following:
+{{AudioDecoderConfig/description}} is required, and has to be the following:
 
 - The bytes `0x66 0x4C 0x61 0x43` ("`fLaC`" in ASCII)
-- A `METADATA_BLOCK` of type `STEAMINFO` as described in [[FLAC]]
-- Optionaly other `METADATA_BLOCK`, that are not used by the specification
+- A `metadata block` (called the STREAMINFO block) as described in section 7 of [[FLAC]]
+- Optionaly other metadata blocks, that are not used by the specification
 
-The {{AudioDecoderConfig.sampleRate}} and {{AudioDecoderConfig.numberOfChannels}}
+The {{AudioDecoderConfig/sampleRate}} and {{AudioDecoderConfig/numberOfChannels}}
 members are overridden by what the decoder finds in the
-{{AudioDecoderConfig.description}}.
+{{AudioDecoderConfig/description}}.
 
 NOTE: This corresponds to the beginning of a FLAC bitstream, before the audio
     frames.
@@ -88,15 +73,73 @@ NOTE: This corresponds to the beginning of a FLAC bitstream, before the audio
 EncodedAudioChunk type {#encodedaudiochunk-type}
 ================================================
 
-The [=EncodedAudioChunk/[[type]]=] for an {{EncodedAudioChunk}} containing
-FLAC is always "[=EncodedAudioChunkType/key=]".
+The {{EncodedAudioChunk/[[type]]}} for an {{EncodedAudioChunk}} containing
+FLAC is always "{{EncodedAudioChunkType/key}}".
 
 NOTE: Once the initialization has succeeded, any FLAC packet can be decoded at
     any time without error, but this might not result in the expected audio output.
 
-Privacy and Security Considerations {#privacy-and-security-considerations}
+AudioEncoderConfig extensions {#audioencoderconfig-extensions}
+=============================================================
+
+<pre class='idl'>
+<xmp>
+partial dictionary AudioEncoderConfig {
+  FlacEncoderConfig flac;
+};
+</xmp>
+</pre>
+
+<dl>
+  <dt><dfn dict-member for=AudioEncoderConfig>flac</dfn></dt>
+  <dd>
+    Contains codec specific configuration options for the FLAC codec.
+  </dd>
+</dl>
+
+
+FlacEncoderConfig {#flac-encoder-config}
+--------------------------------------
+
+<pre class='idl'>
+<xmp>
+dictionary FlacEncoderConfig {
+  [EnforceRange] unsigned long blockSize = 0;
+  [EnforceRange] unsigned long compressLevel = 5;
+};
+</xmp>
+</pre>
+
+To check if an {{FlacEncoderConfig}} is valid, run these steps:
+1. If {{FlacEncoderConfig/blockSize}} is not a valid block size,
+    which is described section 5.1 of [[FLAC]], return `false`.
+1. If {{FlacEncoderConfig/compressLevel}} is specified and not within the range of
+    `0` (fastest, least compression) and `8` (slowest, most compression) inclusively, return `false`.
+2. Return `true`.
+
+<dl>
+  <dt><dfn dict-member for=FlacEncoderConfig>blockSize</dfn></dt>
+  <dd>
+    Configures the number of samples to use per frame, of output {{EncodedAudioChunk}}s.
+    
+    NOTE: Use 0 to let the encoder estimate a blocksize by default.
+  </dd>
+  
+  <dt><dfn dict-member for=FlacEncoderConfig>compressLevel</dfn></dt>
+  <dd>
+    Configures the compression level to use while encoding.
+  </dd>
+  
+</dl>
+
+Privacy Considerations {#privacy-considerations}
 ==========================================================================
 
-Please refer to the [[WEBCODECS#privacy-considerations|Privacy Considerations]]
-and [[WEBCODECS#security-considerations|Security Considerations]] sections in
-[[WEBCODECS]].
+Please refer to the section [[WEBCODECS#privacy-considerations|Privacy
+Considerations]] in [[WEBCODECS]].
+
+Security Considerations {#security-considerations}
+==========================================================================
+
+Please refer to the section [[WEBCODECS#security-considerations|Security
+Considerations]] in [[WEBCODECS]].
